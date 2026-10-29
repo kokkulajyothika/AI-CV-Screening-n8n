@@ -142,3 +142,12 @@ All test data is made up. No real applicant data was used.
 ```
 
 > 🔐 Never commit API keys. The exported workflow files contain no credentials.
+
+---
+
+## 👩‍💻 Author
+
+**Jyothika Kokkula** · MSc Artificial Intelligence, Teesside University (UK)
+Open to graduate / junior roles in AI engineering, AI automation and data.
+
+[LinkedIn](https://www.linkedin.com/in/jyothikakokkula) · ✉️ [kokkulajyothika@gmail.com](mailto:kokkulajyothika@gmail.com)
