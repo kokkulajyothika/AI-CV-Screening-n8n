@@ -1,0 +1,466 @@
+{
+  "name": "CV Screening V2 - Form",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## AI CV Screening V2 (Form)\n1. **Validate Inputs** – checks the CV and job description; hides name, email, phone and links from the AI (fairness).\n2. **Inputs OK?** – invalid input skips the AI and returns a clear error.\n3. **Ask Groq** – structured JSON answer, temperature 0, 3 automatic retries.\n4. **Parse & Score** – verifies every quote exists in the CV, then scores with a fixed rubric in code: required 50% · preferred 20% · experience 20% · education 10%.\n5. **Build Report** – report page / JSON response. Supports human review; not a hiring decision.\n6. **Screened OK? → Prepare Record → Save to History** – successful results are saved to the CV Screenings data table, including the CV text (applicants are told on the form).",
+        "height": 330,
+        "width": 760
+      },
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        -208
+      ],
+      "id": "1330772a-617a-401a-b5f9-c421e5e1e51b"
+    },
+    {
+      "parameters": {
+        "formTitle": "AI CV Screening",
+        "formDescription": "Paste a CV and a job description to get an evidence-based screening report. The AI does not see the candidate's name or contact details. Privacy: the submitted details, including the CV text, are stored securely for recruitment review only.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Candidate Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email"
+            },
+            {
+              "fieldLabel": "Job Title",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "CV Text",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Job Description",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Screen this CV",
+          "customCss": "@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');\n\n:root {\n  --font-family: 'Plus Jakarta Sans', 'Open Sans', sans-serif;\n  --font-size-header: 26px;\n  --font-size-label: 14px;\n  --font-size-input: 14px;\n  --color-background: #0f0c29;\n  --color-card-bg: rgba(255, 255, 255, 0.92);\n  --color-card-border: rgba(255, 255, 255, 0.6);\n  --color-header: #1e1b4b;\n  --color-label: #312e81;\n  --color-input-border: #c7d2fe;\n  --color-input-text: #1e1b4b;\n  --color-input-bg: #f8faff;\n  --color-focus-border: #7c3aed;\n  --color-submit-btn-bg: #6d28d9;\n  --color-required: #db2777;\n  --color-html-text: #1f2937;\n  --color-html-link: #6d28d9;\n  --border-radius-card: 20px;\n  --border-radius-input: 12px;\n  --container-width: 580px;\n  --submit-btn-height: 52px;\n  --box-shadow-card: 0 24px 60px rgba(15, 12, 41, 0.35);\n}\n\n/* Moving gradient background */\nbody {\n  min-height: 100vh;\n  background: linear-gradient(-45deg, #1e1b4b, #6d28d9, #db2777, #0ea5e9);\n  background-size: 400% 400%;\n  animation: bgShift 18s ease infinite;\n  overflow-x: hidden;\n}\n@keyframes bgShift {\n  0% { background-position: 0% 50%; }\n  50% { background-position: 100% 50%; }\n  100% { background-position: 0% 50%; }\n}\n\n/* Soft floating light blobs */\nbody::before, body::after {\n  content: \"\";\n  position: fixed;\n  width: 420px;\n  height: 420px;\n  border-radius: 50%;\n  filter: blur(90px);\n  opacity: 0.45;\n  z-index: 0;\n  pointer-events: none;\n  animation: float 14s ease-in-out infinite;\n}\nbody::before { background: #a78bfa; top: -120px; left: -120px; }\nbody::after { background: #22d3ee; bottom: -140px; right: -100px; animation-delay: -7s; }\n@keyframes float {\n  0%, 100% { transform: translate(0, 0) scale(1); }\n  50% { transform: translate(60px, 40px) scale(1.15); }\n}\n\n.container { position: relative; z-index: 1; }\n\n/* Glass card that rises in */\n.card {\n  backdrop-filter: blur(14px);\n  -webkit-backdrop-filter: blur(14px);\n  animation: rise 0.7s cubic-bezier(.2, .8, .2, 1) both;\n}\n@keyframes rise {\n  from { opacity: 0; transform: translateY(28px) scale(0.98); }\n  to { opacity: 1; transform: translateY(0) scale(1); }\n}\n\n/* Header with gradient text */\n.form-header h1, #submitted-header {\n  background: linear-gradient(90deg, #4c1d95, #db2777);\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n  font-weight: 700;\n  letter-spacing: -0.02em;\n}\n\n/* Fields appear one after another */\n.form-group { animation: rise 0.6s cubic-bezier(.2, .8, .2, 1) both; }\n.form-group:nth-child(1) { animation-delay: 0.15s; }\n.form-group:nth-child(2) { animation-delay: 0.25s; }\n.form-group:nth-child(3) { animation-delay: 0.35s; }\n.form-group:nth-child(4) { animation-delay: 0.45s; }\n.form-group:nth-child(5) { animation-delay: 0.55s; }\n\n.form-label { font-weight: 600; }\n\n/* Inputs glow on focus */\n.form-input, input, textarea {\n  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;\n}\n.form-input:focus, input:focus, textarea:focus {\n  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.18);\n  transform: translateY(-1px);\n}\ntextarea { min-height: 140px; }\n\n/* Shimmering gradient button that lifts on hover */\n#submit-btn {\n  background: linear-gradient(90deg, #6d28d9, #db2777, #6d28d9);\n  background-size: 200% 100%;\n  border: none;\n  border-radius: 14px;\n  font-weight: 600;\n  letter-spacing: 0.02em;\n  animation: shimmer 4s linear infinite;\n  transition: transform 0.2s, box-shadow 0.2s;\n  box-shadow: 0 10px 24px rgba(109, 40, 217, 0.35);\n}\n#submit-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(219, 39, 119, 0.4); }\n#submit-btn:active { transform: translateY(0); }\n@keyframes shimmer {\n  0% { background-position: 0% 0; }\n  100% { background-position: 200% 0; }\n}\n\n/* Report page: tables and sections fade in */\n#submitted-content table, #submitted-content h3, #submitted-content ul, #submitted-content ol, #submitted-content p {\n  animation: rise 0.6s cubic-bezier(.2, .8, .2, 1) both;\n}\n#submitted-content tr { transition: background 0.2s; }\n#submitted-content tr:hover { background: rgba(124, 58, 237, 0.06); }\n\n.test-notice { border-radius: 12px; }\n\n/* Respect users who prefer less motion */\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after { animation: none !important; transition: none !important; }\n}\n"
+        }
+      },
+      "name": "CV Submission Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -448,
+        256
+      ],
+      "id": "dcec658d-3ad9-4ae8-b49a-78b4de665427",
+      "webhookId": "182c2800-8fd5-43db-8ab6-d8b03fee15b3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// VALIDATE & ANONYMISE\n// Accepts webhook JSON (camelCase) or form fields (labels), checks inputs,\n// and removes the candidate's name, email and phone before the CV goes to the AI.\nconst incoming = $input.first().json;\nconst body = incoming.body ?? incoming;\n\nconst pick = (...keys) => {\n  for (const k of keys) {\n    if (body[k] !== undefined && body[k] !== null) return String(body[k]).trim();\n  }\n  return \"\";\n};\n\nconst candidateName = pick(\"candidateName\", \"Candidate Name\");\nconst email = pick(\"email\", \"Email\");\nconst jobTitle = pick(\"jobTitle\", \"Job Title\");\nconst cvText = pick(\"cvText\", \"CV Text\");\nconst jobDescription = pick(\"jobDescription\", \"Job Description\");\n\nconst errors = [];\nif (!cvText) errors.push(\"CV text is missing.\");\nelse if (cvText.length < 50) errors.push(\"CV text is too short to screen (under 50 characters).\");\nelse if (cvText.length > 30000) errors.push(\"CV text is too long (over 30,000 characters).\");\n\nif (!jobDescription) errors.push(\"Job description is missing.\");\nelse if (jobDescription.length < 30) errors.push(\"Job description is too short to screen against (under 30 characters).\");\nelse if (jobDescription.length > 15000) errors.push(\"Job description is too long (over 15,000 characters).\");\n\nif (email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) errors.push(\"Email address does not look valid.\");\n\n// Fairness safeguard: hide identity details from the AI.\nconst escapeRe = (s) => s.replace(/[.*+?^${}()|[\\]\\\\]/g, \"\\\\$&\");\n// Contact details first, then the name (so emails are not broken apart).\nlet redactedCv = cvText\n  .replace(/[\\w.+-]+@[\\w-]+\\.[\\w.-]+/g, \"[EMAIL]\")\n  .replace(/https?:\\/\\/\\S+|(?:www\\.)?linkedin\\.com\\/\\S+/gi, \"[LINK]\")\n  .replace(/\\+?\\d[\\d\\s().-]{7,}\\d/g, (m) => ((m.match(/\\d/g) || []).length >= 10 ? \"[PHONE]\" : m));\nconst nameParts = candidateName\n  ? [candidateName, ...candidateName.split(/\\s+/).filter((p) => p.length > 2)]\n  : [];\nfor (const part of nameParts) {\n  redactedCv = redactedCv.replace(new RegExp(`\\\\b${escapeRe(part)}\\\\b`, \"gi\"), \"[CANDIDATE]\");\n}\n\nreturn [{\n  json: {\n    ok: errors.length === 0,\n    errorType: errors.length ? \"input\" : null,\n    errors,\n    candidateName,\n    email,\n    jobTitle,\n    jobDescription,\n    cvText,\n    redactedCv,\n    receivedAt: new Date().toISOString()\n  }\n}];\n"
+      },
+      "name": "Validate Inputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        256
+      ],
+      "id": "f28a97e4-b450-416f-8de8-fd2980fdd34f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ok1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Inputs OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        256
+      ],
+      "id": "4c6d7c8b-a8d9-4607-ae36-a126c20aeab8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'openai/gpt-oss-20b', temperature: 0, seed: 42, reasoning_effort: 'low', max_completion_tokens: 8000, response_format: { type: 'json_schema', json_schema: { name: 'cv_screening', strict: true, schema: {\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"required_skills\",\"preferred_skills\",\"experience\",\"education\",\"strengths\",\"gaps\",\"interview_questions\",\"summary\"],\"properties\":{\"required_skills\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"skill\",\"status\",\"evidence\",\"note\"],\"properties\":{\"skill\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"met\",\"partial\",\"not_evidenced\",\"lacks\"]},\"evidence\":{\"type\":\"string\"},\"note\":{\"type\":\"string\"} } } },\"preferred_skills\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"skill\",\"status\",\"evidence\",\"note\"],\"properties\":{\"skill\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"met\",\"partial\",\"not_evidenced\",\"lacks\"]},\"evidence\":{\"type\":\"string\"},\"note\":{\"type\":\"string\"} } } },\"experience\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"relevance\",\"relevant_years_estimate\",\"evidence\",\"summary\"],\"properties\":{\"relevance\":{\"type\":\"string\",\"enum\":[\"strong\",\"relevant\",\"limited\",\"none\"]},\"relevant_years_estimate\":{\"type\":[\"number\",\"null\"]},\"evidence\":{\"type\":\"array\",\"items\":{\"type\":\"string\"} },\"summary\":{\"type\":\"string\"} } },\"education\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"status\",\"evidence\",\"note\"],\"properties\":{\"status\":{\"type\":\"string\",\"enum\":[\"meets\",\"partial\",\"not_evidenced\",\"not_required\"]},\"evidence\":{\"type\":\"string\"},\"note\":{\"type\":\"string\"} } },\"strengths\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"point\",\"evidence\"],\"properties\":{\"point\":{\"type\":\"string\"},\"evidence\":{\"type\":\"string\"} } } },\"gaps\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"point\",\"type\"],\"properties\":{\"point\":{\"type\":\"string\"},\"type\":{\"type\":\"string\",\"enum\":[\"partial\",\"not_evidenced\",\"lacks\"]} } } },\"interview_questions\":{\"type\":\"array\",\"items\":{\"type\":\"string\"} },\"summary\":{\"type\":\"string\"} } } } }, messages: [ { role: 'system', content: \"You are an evidence-based CV screening assistant. You support a human recruiter; you never make the hiring decision and you never give a score.\\n\\nThe CV has been anonymised: the candidate appears as [CANDIDATE], and contact details as [EMAIL], [PHONE] or [LINK]. Do not guess identity, gender, age, nationality or ethnicity, and do not let them influence anything.\\n\\nSTEP 1 - Read the job description and list its requirements.\\n- \\\"required_skills\\\": every must-have requirement (words like required, must, essential). If the job description does not separate required from preferred, treat the main listed requirements as required.\\n- \\\"preferred_skills\\\": every nice-to-have requirement (preferred, desirable, bonus, nice to have).\\n- Keep each requirement short, using the job description's own wording.\\n\\nSTEP 2 - For each requirement, choose exactly one status:\\n- \\\"met\\\": the CV clearly shows it.\\n- \\\"partial\\\": the CV shows something related but weaker or narrower (for example Tableau asked, only Excel charts shown).\\n- \\\"not_evidenced\\\": the CV does not mention it. This is NOT proof the candidate lacks it.\\n- \\\"lacks\\\": the CV explicitly shows the candidate does not have it (for example \\\"no driving licence\\\", or an experience requirement clearly longer than the CV's dates allow).\\n\\nSTEP 3 - Evidence rules (very important):\\n- \\\"evidence\\\" must be an EXACT quote copied character-for-character from the CV, at most 25 words. Do not paraphrase, merge or fix typos.\\n- If the status is \\\"not_evidenced\\\", evidence must be \\\"\\\".\\n- Never invent qualifications, employers, dates, tools or experience.\\n- Transferable evidence counts: for soft skills (communication, teamwork, leadership, organisation), experience from any job, study or volunteering (for example serving customers, training colleagues, presenting) is at least \\\"partial\\\", with the quote as evidence.\\n\\nReturn ONLY a JSON object, with no markdown, in exactly this shape:\\n{\\n  \\\"required_skills\\\": [{\\\"skill\\\": \\\"\\\", \\\"status\\\": \\\"met|partial|not_evidenced|lacks\\\", \\\"evidence\\\": \\\"\\\", \\\"note\\\": \\\"\\\"}],\\n  \\\"preferred_skills\\\": [{\\\"skill\\\": \\\"\\\", \\\"status\\\": \\\"met|partial|not_evidenced|lacks\\\", \\\"evidence\\\": \\\"\\\", \\\"note\\\": \\\"\\\"}],\\n  \\\"experience\\\": {\\\"relevance\\\": \\\"strong|relevant|limited|none\\\", \\\"relevant_years_estimate\\\": null, \\\"evidence\\\": [\\\"\\\"], \\\"summary\\\": \\\"\\\"},\\n  \\\"education\\\": {\\\"status\\\": \\\"meets|partial|not_evidenced|not_required\\\", \\\"evidence\\\": \\\"\\\", \\\"note\\\": \\\"\\\"},\\n  \\\"strengths\\\": [{\\\"point\\\": \\\"\\\", \\\"evidence\\\": \\\"\\\"}],\\n  \\\"gaps\\\": [{\\\"point\\\": \\\"\\\", \\\"type\\\": \\\"partial|not_evidenced|lacks\\\"}],\\n  \\\"interview_questions\\\": [\\\"\\\"],\\n  \\\"summary\\\": \\\"\\\"\\n}\\n\\nGuidance:\\n- experience.relevance: \\\"strong\\\" = substantial directly relevant work experience; \\\"relevant\\\" = some directly relevant experience (for example internships or projects closely matching the role); \\\"limited\\\" = loosely related experience only; \\\"none\\\" = no relevant experience shown.\\n- relevant_years_estimate: a number based only on CV dates, or null if unclear.\\n- education.status: \\\"not_required\\\" if the job description states no education requirement, OR if the education requirement is already listed in required_skills or preferred_skills (never count it twice).\\n- Fill in EVERY field of the JSON. Do not stop early.\\n- strengths: 2 to 5 items, each with an exact CV quote.\\n- gaps: every requirement that is not \\\"met\\\", in plain words, with its type (\\\"partial\\\", \\\"not_evidenced\\\" or \\\"lacks\\\").\\n- interview_questions: 3 to 5 questions that would check the gaps or unclear points.\\n- summary: 1 to 2 neutral sentences. Do not mention a score or a hire / no-hire decision.\" }, { role: 'user', content: 'Job title: ' + $json.jobTitle + '\\n\\nJOB DESCRIPTION:\\n' + $json.jobDescription + '\\n\\nCV (anonymised):\\n' + $json.redactedCv } ] }) }}",
+        "options": {
+          "timeout": 90000
+        }
+      },
+      "name": "Ask Groq",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        160
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "id": "cddd7f8b-4de1-4d09-8e04-9c416f8a0692",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Groq API Key (select your own)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// PARSE & SCORE\n// 1) Reads the AI's JSON answer safely.\n// 2) Checks every evidence quote really exists in the CV (hallucination check).\n// 3) Calculates the match score with a fixed rubric, in code, so results are consistent.\nconst input = $('Validate Inputs').first().json;\nconst resp = $input.first().json;\nconst MODEL = \"openai/gpt-oss-20b\";\n\nconst fail = (errorType, errors, extra = {}) => [{\n  json: {\n    ok: false, errorType, errors,\n    candidateName: input.candidateName, jobTitle: input.jobTitle, ...extra\n  }\n}];\n\n// --- 1. Parse the AI answer ---------------------------------------------\nif (resp.error) {\n  const msg = typeof resp.error === \"string\" ? resp.error : (resp.error.message || JSON.stringify(resp.error));\n  return fail(\"ai_service\", [`The AI service did not respond successfully after retries: ${String(msg).slice(0, 300)}`]);\n}\nconst raw = resp?.choices?.[0]?.message?.content ?? \"\";\nlet data;\ntry {\n  data = JSON.parse(String(raw).replace(/^\\s*```(?:json)?\\s*|\\s*```\\s*$/g, \"\"));\n} catch (e) {\n  return fail(\"ai_format\", [\"The AI answer was not valid JSON, so it could not be scored.\"], { rawResponse: String(raw).slice(0, 1500) });\n}\nif (!Array.isArray(data.required_skills) || data.required_skills.length === 0) {\n  return fail(\"ai_format\", [\"The AI answer did not list any required skills, so it could not be scored.\"], { rawResponse: String(raw).slice(0, 1500) });\n}\n// Never score an incomplete answer – a missing section would silently lower the score.\nconst missing = [\"preferred_skills\", \"experience\", \"education\", \"strengths\", \"gaps\", \"interview_questions\", \"summary\"]\n  .filter((k) => data[k] === undefined || data[k] === null);\nif (missing.length) {\n  return fail(\"ai_format\", [`The AI answer was incomplete (missing: ${missing.join(\", \")}), so it was not scored. Please try again.`], { rawResponse: String(raw).slice(0, 1500) });\n}\n\n// --- 2. Evidence verification -------------------------------------------\nconst norm = (s) => String(s || \"\")\n  .toLowerCase()\n  .replace(/[‘’“”\"'`]/g, \"\")\n  .replace(/[‐-―]/g, \"-\")\n  .replace(/[^a-z0-9+#.\\-\\[\\] ]+/g, \" \")\n  .replace(/\\s+/g, \" \")\n  .trim();\nconst cvNorm = norm(input.redactedCv);\nconst cvWords = new Set(cvNorm.split(\" \"));\n\nfunction isVerified(quote) {\n  const q = norm(quote);\n  if (!q) return false;\n  if (cvNorm.includes(q)) return true;\n  // Allow small differences: at least 85% of the quote's meaningful words appear in the CV.\n  const words = q.split(\" \").filter((w) => w.length > 2);\n  if (words.length < 3) return false;\n  const found = words.filter((w) => cvWords.has(w)).length;\n  return found / words.length >= 0.85;\n}\n\nconst STATUSES = [\"met\", \"partial\", \"not_evidenced\", \"lacks\"];\nconst BASE_CREDIT = { met: 1, partial: 0.5, not_evidenced: 0, lacks: 0 };\nconst unverified = [];\n\nfunction checkSkills(list, group) {\n  return (Array.isArray(list) ? list : []).map((s) => {\n    let status = STATUSES.includes(s.status) ? s.status : \"not_evidenced\";\n    const evidence = String(s.evidence || \"\").trim();\n    let verified = null;\n    let credit = BASE_CREDIT[status];\n    if (status === \"met\" || status === \"partial\") {\n      verified = isVerified(evidence);\n      if (!verified) {\n        credit = credit / 2; // halve credit when the quote cannot be found in the CV\n        unverified.push(`${group}: \"${s.skill}\" (quote not found in CV)`);\n      }\n    }\n    return { skill: String(s.skill || \"\").trim(), status, evidence, evidenceVerified: verified, note: String(s.note || \"\").trim(), credit };\n  });\n}\n\nconst required = checkSkills(data.required_skills, \"Required skill\");\nconst preferred = checkSkills(data.preferred_skills, \"Preferred skill\");\n\nconst exp = data.experience || {};\nconst EXP_CREDIT = { strong: 1, relevant: 0.7, limited: 0.35, none: 0 };\nconst expRelevance = Object.keys(EXP_CREDIT).includes(exp.relevance) ? exp.relevance : \"none\";\nconst expEvidence = (Array.isArray(exp.evidence) ? exp.evidence : [exp.evidence]).filter(Boolean).map(String);\nconst expVerified = expEvidence.length ? expEvidence.every(isVerified) : expRelevance === \"none\";\nlet expCredit = EXP_CREDIT[expRelevance];\nif (!expVerified && expCredit > 0) { expCredit /= 2; unverified.push(\"Experience: supporting quote not found in CV\"); }\n\nconst edu = data.education || {};\nconst EDU_CREDIT = { meets: 1, partial: 0.5, not_evidenced: 0 };\nconst eduStatus = [\"meets\", \"partial\", \"not_evidenced\", \"not_required\"].includes(edu.status) ? edu.status : \"not_evidenced\";\nlet eduCredit = eduStatus === \"not_required\" ? null : EDU_CREDIT[eduStatus];\nconst eduVerified = eduStatus === \"meets\" || eduStatus === \"partial\" ? isVerified(edu.evidence) : null;\nif (eduVerified === false) { eduCredit /= 2; unverified.push(\"Education: quote not found in CV\"); }\n\n// --- 3. Rubric score (calculated in code) --------------------------------\nconst avg = (arr) => (arr.length ? arr.reduce((a, s) => a + s.credit, 0) / arr.length : null);\nconst components = [\n  { name: \"Required skills\", weight: 50, value: avg(required) },\n  { name: \"Preferred skills\", weight: 20, value: avg(preferred) },\n  { name: \"Relevant experience\", weight: 20, value: expCredit },\n  { name: \"Education\", weight: 10, value: eduCredit }\n].filter((c) => c.value !== null);\n\nconst totalWeight = components.reduce((a, c) => a + c.weight, 0);\nconst score = Math.round(components.reduce((a, c) => a + c.weight * c.value, 0) / totalWeight * 100);\nconst breakdown = components.map((c) => ({\n  component: c.name,\n  weight: Math.round((c.weight / totalWeight) * 100),\n  achievedPercent: Math.round(c.value * 100),\n  points: Math.round((c.weight * c.value / totalWeight) * 100 * 10) / 10\n}));\n\nconst requiredGaps = required.filter((s) => s.status === \"not_evidenced\" || s.status === \"lacks\");\nconst requiredLacks = required.filter((s) => s.status === \"lacks\");\nlet band;\nif (score >= 75 && requiredGaps.length === 0) band = \"Strong match\";\nelse if (score >= 50 && requiredLacks.length === 0) band = \"Possible match\";\nelse band = \"Weak match\";\n\nconst allChecked = [...required, ...preferred].filter((s) => s.evidenceVerified !== null);\nconst verifiedShare = allChecked.length ? allChecked.filter((s) => s.evidenceVerified).length / allChecked.length : 1;\n\nconst flags = [];\nif (unverified.length) flags.push(...unverified.map((u) => `Unverified evidence – ${u}`));\nif (requiredLacks.length) flags.push(`CV indicates the candidate lacks: ${requiredLacks.map((s) => s.skill).join(\", \")}`);\nif (required.length < 2) flags.push(\"Only one required skill was identified – check the job description is detailed enough.\");\n\nreturn [{\n  json: {\n    ok: true,\n    candidateName: input.candidateName,\n    jobTitle: input.jobTitle,\n    score,\n    band,\n    breakdown,\n    evidenceVerifiedPercent: Math.round(verifiedShare * 100),\n    requiredSkills: required,\n    preferredSkills: preferred,\n    experience: {\n      relevance: expRelevance,\n      relevantYearsEstimate: typeof exp.relevant_years_estimate === \"number\" ? exp.relevant_years_estimate : null,\n      evidence: expEvidence,\n      evidenceVerified: expVerified,\n      summary: String(exp.summary || \"\")\n    },\n    education: { status: eduStatus, evidence: String(edu.evidence || \"\"), evidenceVerified: eduVerified, note: String(edu.note || \"\") },\n    strengths: (Array.isArray(data.strengths) ? data.strengths : []).map((s) => ({ point: String(s.point || s), evidence: String(s.evidence || \"\"), evidenceVerified: s.evidence ? isVerified(s.evidence) : null })),\n    gaps: (Array.isArray(data.gaps) ? data.gaps : []).map((g) => ({ point: String(g.point || g), type: [\"partial\", \"lacks\"].includes(g.type) ? g.type : \"not_evidenced\" })),\n    interviewQuestions: (Array.isArray(data.interview_questions) ? data.interview_questions : []).map(String).filter(Boolean),\n    summary: String(data.summary || \"\"),\n    flags,\n    meta: {\n      model: MODEL,\n      scoringRubric: \"Required skills 50%, preferred skills 20%, relevant experience 20%, education 10% (re-weighted if a part does not apply). Met = full credit, partial = half, not evidenced / lacks = none; credit is halved when the AI's quote cannot be found in the CV.\",\n      bands: \"Strong ≥75 with all required skills at least partly evidenced; Possible ≥50 with no required skill explicitly lacking; otherwise Weak.\",\n      anonymised: true,\n      screenedAt: new Date().toISOString(),\n      disclaimer: \"AI-assisted screening to support human review. Not a hiring decision.\"\n    }\n  }\n}];\n"
+      },
+      "name": "Parse & Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        160
+      ],
+      "id": "e17a8715-84eb-4901-a1f9-bdc9011e8271"
+    },
+    {
+      "parameters": {
+        "jsCode": "// BUILD REPORT (form version)\n// The form's end page removes inline styles, so this builds clean HTML\n// and the look comes from the \"Show Report\" node's Custom Form Styling.\n// Produces: `response` (structured JSON), `statusCode`, and `html` (for the report page).\nconst r = $input.first().json;\nconst esc = (s) => String(s ?? \"\").replace(/&/g, \"&amp;\").replace(/</g, \"&lt;\").replace(/>/g, \"&gt;\");\n\n// ---------- Error case ----------\nif (!r.ok) {\n  const statusCode = r.errorType === \"input\" ? 400 : 502;\n  const title = r.errorType === \"input\" ? \"⚠️ Please check the submission\" : \"⚠️ Screening could not be completed\";\n  const html =\n    `<h2>${title}</h2>` +\n    `<ul>${(r.errors || []).map((e) => `<li>${esc(e)}</li>`).join(\"\")}</ul>` +\n    `<p><em>Nothing was saved. Go back, fix the details above and submit again.</em></p>`;\n  return [{ json: { ok: false, statusCode, html, response: { ok: false, errorType: r.errorType, errors: r.errors || [] } } }];\n}\n\n// ---------- Success case ----------\nconst STATUS = { met: \"✅ Met\", partial: \"🟡 Partly met\", not_evidenced: \"⚪ Not evidenced\", lacks: \"❌ Lacks (per CV)\" };\nconst BAND = { \"Strong match\": \"🟢 Strong match\", \"Possible match\": \"🟡 Possible match\", \"Weak match\": \"🔴 Weak match\" };\n\nconst skillTable = (rows) => rows.length\n  ? `<table><tr><th>Requirement</th><th>Status</th><th>Evidence from CV</th></tr>` +\n    rows.map((s) =>\n      `<tr><td>${esc(s.skill)}</td><td><strong>${STATUS[s.status]}</strong></td>` +\n      `<td>${s.evidence ? `“${esc(s.evidence)}”` : \"—\"}` +\n      `${s.evidenceVerified === false ? \" <strong>(quote not found in CV – half credit)</strong>\" : \"\"}` +\n      `${s.note ? `<br><em>${esc(s.note)}</em>` : \"\"}</td></tr>`\n    ).join(\"\") + `</table>`\n  : `<p><em>None listed in the job description.</em></p>`;\n\nconst list = (items) => (items.length ? `<ul>${items.join(\"\")}</ul>` : `<p><em>None.</em></p>`);\n\nconst html =\n  `<h2>${esc(r.candidateName || \"Candidate\")} · ${esc(r.jobTitle)}</h2>` +\n  `<h1>${r.score}/100 · ${BAND[r.band]}</h1>` +\n  `<p>${esc(r.summary)}</p>` +\n  `<p><small>🔍 Evidence verified against the CV: ${r.evidenceVerifiedPercent}% · 🛡️ Candidate details hidden from the AI</small></p>` +\n\n  `<h3>📊 Score breakdown</h3>` +\n  `<table><tr><th>Part</th><th>Weight</th><th>Achieved</th><th>Points</th></tr>` +\n  r.breakdown.map((b) => `<tr><td>${b.component}</td><td>${b.weight}%</td><td>${b.achievedPercent}%</td><td>${b.points}</td></tr>`).join(\"\") +\n  `</table>` +\n\n  `<h3>🎯 Required skills</h3>` + skillTable(r.requiredSkills) +\n  `<h3>⭐ Preferred skills</h3>` + skillTable(r.preferredSkills) +\n\n  `<h3>💼 Relevant experience</h3>` +\n  `<p><strong>${esc(r.experience.relevance)}</strong>` +\n  `${r.experience.relevantYearsEstimate !== null ? ` · about ${r.experience.relevantYearsEstimate} year(s)` : \"\"}</p>` +\n  (r.experience.summary ? `<p>${esc(r.experience.summary)}</p>` : \"\") +\n  list(r.experience.evidence.map((e) => `<li>“${esc(e)}”</li>`)) +\n\n  `<h3>🎓 Education</h3>` +\n  `<p><strong>${esc(r.education.status.replace(\"_\", \" \"))}</strong>` +\n  `${r.education.evidence ? ` – “${esc(r.education.evidence)}”` : \"\"}</p>` +\n\n  `<h3>💪 Strengths</h3>` +\n  list(r.strengths.map((s) => `<li>${esc(s.point)}${s.evidence ? ` – <em>“${esc(s.evidence)}”</em>` : \"\"}</li>`)) +\n\n  `<h3>🧩 Gaps and missing evidence</h3>` +\n  list(r.gaps.map((g) => `<li>${esc(g.point)} <em>(${g.type === \"lacks\" ? \"CV shows it is lacking\" : g.type === \"partial\" ? \"only partly shown in CV\" : \"not mentioned in CV\"})</em></li>`)) +\n\n  `<h3>💬 Suggested interview questions</h3>` +\n  (r.interviewQuestions.length ? `<ol>${r.interviewQuestions.map((q) => `<li>${esc(q)}</li>`).join(\"\")}</ol>` : \"<p><em>None.</em></p>\") +\n\n  (r.flags.length ? `<h3>⚠️ Points for the reviewer to check</h3>` + list(r.flags.map((f) => `<li>${esc(f)}</li>`)) : \"\") +\n\n  `<hr>` +\n  `<p><small><strong>How the score works:</strong> ${esc(r.meta.scoringRubric)} ${esc(r.meta.bands)}</small></p>` +\n  `<p><small>${esc(r.meta.disclaimer)}</small></p>`;\n\nconst { ok, ...rest } = r;\nreturn [{ json: { ok: true, statusCode: 200, html, response: { ok: true, ...rest } } }];\n"
+      },
+      "name": "Build Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        256
+      ],
+      "id": "5294141e-0a3c-46dc-8d4d-e3307f7a77c9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ok2",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Screened OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1008,
+        32
+      ],
+      "id": "9eedf276-6ce5-4634-a73a-b3908bff9efd"
+    },
+    {
+      "parameters": {
+        "jsCode": "// PREPARE RECORD\n// Turns a successful screening into one row for the \"CV Screenings\" data table,\n// including the submitted CV text (applicants are told on the form that it is stored).\nconst r = $input.first().json.response;\nconst input = $('Validate Inputs').first().json;\nconst met = r.requiredSkills.filter((s) => s.status === \"met\").length;\n\nreturn [{\n  json: {\n    candidate_name: r.candidateName,\n    email: input.email,\n    job_title: r.jobTitle,\n    score: r.score,\n    band: r.band,\n    evidence_verified_pct: r.evidenceVerifiedPercent,\n    required_met: `${met}/${r.requiredSkills.length}`,\n    gaps: r.gaps.map((g) => g.point).join(\"; \").slice(0, 1000),\n    summary: r.summary.slice(0, 1000),\n    cv_text: input.cvText\n  }\n}];\n"
+      },
+      "name": "Prepare Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        16
+      ],
+      "id": "ab6f7855-f9c4-48b9-bbf4-dbb46c995968"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "nOH4rGwG2IoPRtMf",
+          "mode": "list",
+          "cachedResultName": "CV Screenings",
+          "cachedResultUrl": "/projects/L1xowa3mjtRWTGnF/datatables/nOH4rGwG2IoPRtMf"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "candidate_name",
+              "displayName": "candidate_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "band",
+              "displayName": "band",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "required_met",
+              "displayName": "required_met",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "gaps",
+              "displayName": "gaps",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "evidence_verified_pct",
+              "displayName": "evidence_verified_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        320
+      ],
+      "id": "e3f228fd-986c-4571-9b32-e4a758186e42",
+      "name": "Save to History"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Screening report",
+        "completionMessage": "={{ $json.html }}",
+        "options": {
+          "customCss": "@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');\n\n:root {\n  --font-family: 'Plus Jakarta Sans', 'Open Sans', sans-serif;\n  --font-size-header: 26px;\n  --font-size-label: 14px;\n  --font-size-input: 14px;\n  --color-background: #0f0c29;\n  --color-card-bg: rgba(255, 255, 255, 0.92);\n  --color-card-border: rgba(255, 255, 255, 0.6);\n  --color-header: #1e1b4b;\n  --color-label: #312e81;\n  --color-input-border: #c7d2fe;\n  --color-input-text: #1e1b4b;\n  --color-input-bg: #f8faff;\n  --color-focus-border: #7c3aed;\n  --color-submit-btn-bg: #6d28d9;\n  --color-required: #db2777;\n  --color-html-text: #1f2937;\n  --color-html-link: #6d28d9;\n  --border-radius-card: 20px;\n  --border-radius-input: 12px;\n  --container-width: 580px;\n  --submit-btn-height: 52px;\n  --box-shadow-card: 0 24px 60px rgba(15, 12, 41, 0.35);\n}\n\n/* Moving gradient background */\nbody {\n  min-height: 100vh;\n  background: linear-gradient(-45deg, #1e1b4b, #6d28d9, #db2777, #0ea5e9);\n  background-size: 400% 400%;\n  animation: bgShift 18s ease infinite;\n  overflow-x: hidden;\n}\n@keyframes bgShift {\n  0% { background-position: 0% 50%; }\n  50% { background-position: 100% 50%; }\n  100% { background-position: 0% 50%; }\n}\n\n/* Soft floating light blobs */\nbody::before, body::after {\n  content: \"\";\n  position: fixed;\n  width: 420px;\n  height: 420px;\n  border-radius: 50%;\n  filter: blur(90px);\n  opacity: 0.45;\n  z-index: 0;\n  pointer-events: none;\n  animation: float 14s ease-in-out infinite;\n}\nbody::before { background: #a78bfa; top: -120px; left: -120px; }\nbody::after { background: #22d3ee; bottom: -140px; right: -100px; animation-delay: -7s; }\n@keyframes float {\n  0%, 100% { transform: translate(0, 0) scale(1); }\n  50% { transform: translate(60px, 40px) scale(1.15); }\n}\n\n.container { position: relative; z-index: 1; }\n\n/* Glass card that rises in */\n.card {\n  backdrop-filter: blur(14px);\n  -webkit-backdrop-filter: blur(14px);\n  animation: rise 0.7s cubic-bezier(.2, .8, .2, 1) both;\n}\n@keyframes rise {\n  from { opacity: 0; transform: translateY(28px) scale(0.98); }\n  to { opacity: 1; transform: translateY(0) scale(1); }\n}\n\n/* Header with gradient text */\n.form-header h1, #submitted-header {\n  background: linear-gradient(90deg, #4c1d95, #db2777);\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n  font-weight: 700;\n  letter-spacing: -0.02em;\n}\n\n/* Fields appear one after another */\n.form-group { animation: rise 0.6s cubic-bezier(.2, .8, .2, 1) both; }\n.form-group:nth-child(1) { animation-delay: 0.15s; }\n.form-group:nth-child(2) { animation-delay: 0.25s; }\n.form-group:nth-child(3) { animation-delay: 0.35s; }\n.form-group:nth-child(4) { animation-delay: 0.45s; }\n.form-group:nth-child(5) { animation-delay: 0.55s; }\n\n.form-label { font-weight: 600; }\n\n/* Inputs glow on focus */\n.form-input, input, textarea {\n  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;\n}\n.form-input:focus, input:focus, textarea:focus {\n  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.18);\n  transform: translateY(-1px);\n}\ntextarea { min-height: 140px; }\n\n/* Shimmering gradient button that lifts on hover */\n#submit-btn {\n  background: linear-gradient(90deg, #6d28d9, #db2777, #6d28d9);\n  background-size: 200% 100%;\n  border: none;\n  border-radius: 14px;\n  font-weight: 600;\n  letter-spacing: 0.02em;\n  animation: shimmer 4s linear infinite;\n  transition: transform 0.2s, box-shadow 0.2s;\n  box-shadow: 0 10px 24px rgba(109, 40, 217, 0.35);\n}\n#submit-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(219, 39, 119, 0.4); }\n#submit-btn:active { transform: translateY(0); }\n@keyframes shimmer {\n  0% { background-position: 0% 0; }\n  100% { background-position: 200% 0; }\n}\n\n/* Report page: tables and sections fade in */\n#submitted-content table, #submitted-content h3, #submitted-content ul, #submitted-content ol, #submitted-content p {\n  animation: rise 0.6s cubic-bezier(.2, .8, .2, 1) both;\n}\n#submitted-content tr { transition: background 0.2s; }\n#submitted-content tr:hover { background: rgba(124, 58, 237, 0.06); }\n\n.test-notice { border-radius: 12px; }\n\n/* Respect users who prefer less motion */\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after { animation: none !important; transition: none !important; }\n}\n\n/* ===== Report page (end page) ===== */\n.header { text-align: left; font-size: 14px; line-height: 1.55; color: #1f2937; }\n.header > * { animation: rise 0.6s cubic-bezier(.2, .8, .2, 1) both; }\n.header > *:nth-child(2) { animation-delay: 0.10s; }\n.header > *:nth-child(3) { animation-delay: 0.20s; }\n.header > *:nth-child(4) { animation-delay: 0.30s; }\n.header > *:nth-child(5) { animation-delay: 0.40s; }\n.header > *:nth-child(n+6) { animation-delay: 0.50s; }\n.header > h1:first-child { text-align: left; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 6px; }\n.header > h2 { font-size: 15px; font-weight: 600; color: #6d28d9; margin: 0; text-align: left; }\n.header > h1:not(:first-child) {\n  font-size: 34px; margin: 4px 0 10px; text-align: left; font-weight: 700;\n  background: none; -webkit-background-clip: border-box; background-clip: border-box; color: #3b0764;\n}\n.header > h3 {\n  font-size: 16px; margin: 24px 0 8px; color: #4c1d95; text-align: left;\n  padding-bottom: 6px; border-bottom: 2px solid #ede9fe;\n}\n.header > p { margin: 6px 0; text-align: left; }\n.header small { color: #6b7280; }\n.header > table {\n  width: 100%; border-collapse: separate; border-spacing: 0; margin: 6px 0 12px;\n  border: 1px solid #e0e7ff; border-radius: 12px; overflow: hidden; font-size: 13px;\n}\n.header th { background: #eef2ff; color: #312e81; font-weight: 600; }\n.header th, .header td { padding: 8px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid #eef2ff; }\n.header tr:last-child td { border-bottom: none; }\n.header td strong { white-space: nowrap; }\n.header tr { transition: background 0.2s; }\n.header tr:hover td { background: rgba(124, 58, 237, 0.05); }\n.header > ul, .header > ol { text-align: left; padding-left: 22px; margin: 6px 0 12px; }\n.header li { margin: 4px 0; }\n.header > hr { border: none; border-top: 1px solid #e0e7ff; margin: 20px 0; }\n"
+        }
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        560
+      ],
+      "id": "138623b2-62e7-4ccc-9ac3-ded1fd23cd6c",
+      "name": "Show Report",
+      "webhookId": "2c38ad1b-d32a-4c32-a180-11f694ae340d"
+    }
+  ],
+  "connections": {
+    "CV Submission Form": {
+      "main": [
+        [
+          {
+            "node": "Validate Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Inputs": {
+      "main": [
+        [
+          {
+            "node": "Inputs OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inputs OK?": {
+      "main": [
+        [
+          {
+            "node": "Ask Groq",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Groq": {
+      "main": [
+        [
+          {
+            "node": "Parse & Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Score": {
+      "main": [
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Report": {
+      "main": [
+        [
+          {
+            "node": "Screened OK?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Show Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Screened OK?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Record": {
+      "main": [
+        [
+          {
+            "node": "Save to History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "meta": {},
+  "nodeGroups": []
+}
