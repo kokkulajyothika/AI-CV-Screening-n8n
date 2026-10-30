@@ -21,11 +21,17 @@ It reads a CV and a job description, asks an LLM to judge each requirement **wit
 | **Transferable skills** | Soft skills can be credited as *partial* from any job, study or volunteering. | Fairer to career changers. |
 | **Strict structured output** | Groq JSON-schema mode (strict), temperature 0, fixed seed. Incomplete answers are rejected, never scored. | Reliable, machine-readable results. |
 | **Error handling** | Input validation, 3 automatic retries on the AI call, clear `400` (bad input) / `502` (AI problem) responses. | Fails safely with readable messages instead of crashing. |
-| **Two entry points** | A styled web **form** for people, and a **webhook** (JSON API) for other apps. | Shows both UI and API integration. |
+| **Two entry points** | A clean, minimal web **form** for people, and a **webhook** (JSON API) for other apps. | Shows both UI and API integration. |
 | **Screening history** | Successful screenings are saved to an n8n Data Table (score, band, gaps, summary, CV text, date). | Lets a recruiter compare candidates later. |
 | **Privacy notice** | The form tells applicants their details and CV are stored for recruitment review only. | Transparency, in line with UK GDPR principles. |
 
 ---
+
+## 🖥️ Interface
+
+A minimal, distraction-free form (Inter and JetBrains Mono, one indigo accent, a black call to action). The report page uses the same styling.
+
+<p align="center"><img src="docs/screenshots/form.jpg" alt="CV screening form" width="520"></p>
 
 ## 🏗️ Architecture
 
@@ -37,7 +43,7 @@ flowchart LR
     C -- yes --> D[Ask Groq LLM<br/>strict JSON schema<br/>temp 0 · 3 retries]
     D --> E[Parse & Score<br/>✔ verify quotes in CV<br/>✔ rubric score in code]
     E --> F[Build Report]
-    F --> G[📄 Animated report page<br/>or JSON response 200/400/502]
+    F --> G[📄 Report page<br/>or JSON response 200/400/502]
     F --> H{Screened OK?}
     H -- yes --> I[Prepare Record] --> J[(🗂️ CV Screenings<br/>Data Table)]
 ```
